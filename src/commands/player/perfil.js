@@ -7,7 +7,7 @@ module.exports = {
   aliases: ['profile', 'status'],
   async execute({ sock, msg, from, sender }) {
     const phone = sender.split('@')[0];
-    const player = await Player.findOne({ phone });
+    const player = await Player.findOne({ phone }).populate('sect');
     if (!player) {
       return sock.sendMessage(from, { text: 'Você ainda não possui um personagem. Use !registrar para iniciar sua jornada.' });
     }
@@ -27,14 +27,18 @@ module.exports = {
       ? talents.map(t => `${rarityEmoji(t.rarity)} ${t.name}`).join('\n')
       : 'Nenhum talento especial';
 
+    const sectText = player.sect ? player.sect.name : 'Nenhuma';
+    const avatarText = player.avatarUrl || 'Nenhuma definida (use !setaparencia URL)';
+
     const text = `👤 Perfil de ${player.name}\n` +
+      `🖼️ Aparência: ${avatarText}\n` +
       `🧬 Raça: ${player.race} (${player.raceRarity})\n` +
       `🏛️ Clã de Origem: ${player.clan}\n` +
       `🌟 Talentos:\n${talentosText}\n` +
       `🌱 Raiz: ${raiz ? raiz.name : 'Nenhuma raiz especial'}\n` +
       `✨ Corpo Divino: ${corpoDivino ? corpoDivino.name : 'Nenhum'}\n` +
       `📍 Região: ${player.region} — ${player.location}\n` +
-      `🛕 Seita: ${player.sect ? 'Membro de uma seita' : 'Nenhuma'}\n\n` +
+      `🛕 Seita: ${sectText}\n\n` +
       `💢 Corpo: ${bodyName}\n` +
       `🌀 Espírito: ${qiName}\n` +
       `👁️ Alma: ${mindName}\n` +

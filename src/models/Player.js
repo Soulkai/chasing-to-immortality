@@ -83,6 +83,9 @@ const PlayerSchema = new mongoose.Schema({
   raceRarity:{ type: String, enum: ['mortal','awakened','ancient','divine','chaos'], default: 'mortal' },
   clan:      { type: String, default: 'Sem Clã' },
 
+  // Aparência
+  avatarUrl: { type: String, default: null },
+
   // Talentos (sorteados na criação, até 2)
   talents:   [{ name: String, rarity: String, description: String }],
 
@@ -102,6 +105,12 @@ const PlayerSchema = new mongoose.Schema({
   lifeNumber:   { type: Number, default: 1 },
   lifeHistory:  [LifeHistorySchema],
   destinyPoints:{ type: Number, default: 0 },  // PD acumulados (entre vidas)
+
+  // Controle de cultivo
+  weeklyCultivationCount: { type: Number, default: 0 },
+  weeklyCultivationReset: { type: Date, default: null },
+  isInClosedCultivation:  { type: Boolean, default: false },
+  closedCultivationEndAt: { type: Date, default: null },
 
   // Inventário
   inventory:  { type: [InventorySlotSchema], default: [] },

@@ -45,7 +45,6 @@ async function setCultivationTechnique({ sock, from, player, args }) {
     return sock.sendMessage(from, { text: `Não foi encontrada nenhuma técnica chamada "${name}".` });
   }
 
-  // Decide qual trilha essa técnica afeta
   if (technique.cultivationType === 'qi') {
     player.qiCultivation.technique = technique._id;
   } else if (technique.cultivationType === 'body') {
@@ -60,13 +59,28 @@ async function setCultivationTechnique({ sock, from, player, args }) {
 }
 
 async function normalCultivation({ sock, from, player }) {
-  // Verifica limite semanal (campo será adicionado depois, placeholder por enquanto)
   const now = Date.now();
-  const last = player.cooldowns.cultivate;
-  const remaining = getCooldownRemaining(last, THREE_HOURS_MS);
 
-  if (remaining > 0) {
-    return sock.sendMessage(from, { text: `Seu corpo ainda está se ajustando ao último cultivo. Aguarde ${formatCooldown(remaining)}.` });
+  if (player.isInClosedCultivation && player.closedCultivationEndAt && now < new Date(player.closedCultivationEndAt).getTime()) {
+    const remaining = new Date(player.closedCultivationEndAt).getTime() - now;
+    return sock.sendMessage(from, { text: `🕯️ Você está em cultivo recluso. Restam ${formatCooldown(remaining)} até o fim do isolamento.` });
+  }
+
+  // Reset semanal do limite de sessões
+  if (!player.weeklyCultivationReset || now - new Date(player.weeklyCultivationReset).getTime() >= ONE_WEEK_MS) {
+    player.weeklyCultivationReset = new Date(now);
+    player.weeklyCultivationCount = 0;
+  }
+
+  if (player.weeklyCultivationCount >= MAX_WEEKLY_SESSIONS) {
+    return sock.sendMessage(from, { text: '⏳ Você já alcançou o limite de 10 sessões de cultivo nesta semana. Busque experiências no mundo ou tente cultivo recluso.' });
+  }
+
+  const last = player.cooldowns.cultivate;
+  const remainingCd = getCooldownRemaining(last, THREE_HOURS_MS);
+
+  if (remainingCd > 0) {
+    return sock.sendMessage(from, { text: `Seu corpo ainda está se ajustando ao último cultivo. Aguarde ${formatCooldown(remainingCd)}.` });
   }
 
   // Escolhe técnica ativa: prioriza Qi, depois Corpo, depois Mente
@@ -92,7 +106,6 @@ async function normalCultivation({ sock, from, player }) {
     return sock.sendMessage(from, { text: 'Você não possui uma técnica de cultivo equipada. Use !cultivar set nome_da_técnica após obter uma.' });
   }
 
-  // Cálculo simples de XP por enquanto, será refinado depois
   const { attributes } = player;
   let baseXp = 10;
 
@@ -109,7 +122,6 @@ async function normalCultivation({ sock, from, player }) {
   const xpGain = Math.floor(baseXp);
   cultivation.xp += xpGain;
 
-  // Up de sub-nível / reino (lógica simples inicial)
   while (cultivation.xp >= cultivation.xpNeeded) {
     cultivation.xp -= cultivation.xpNeeded;
     cultivation.subLevel += 1;
@@ -117,17 +129,15 @@ async function normalCultivation({ sock, from, player }) {
     if (cultivation.subLevel > 9) {
       cultivation.subLevel = 1;
       cultivation.realm += 1;
-      // aumenta dificuldade
       cultivation.xpNeeded = Math.floor(cultivation.xpNeeded * 1.6);
     } else {
       cultivation.xpNeeded = Math.floor(cultivation.xpNeeded * 1.2);
     }
   }
 
-  // Atualiza cooldown
   player.cooldowns.cultivate = new Date(now);
+  player.weeklyCultivationCount += 1;
 
-  // Salva alterações na trilha correta
   if (path === 'qi') player.qiCultivation = cultivation;
   if (path === 'body') player.bodyCultivation = cultivation;
   if (path === 'mind') player.mindCultivation = cultivation;
@@ -141,12 +151,24 @@ async function normalCultivation({ sock, from, player }) {
   text += `Caminho cultivado: ${path === 'qi' ? '🌀 Qi Espiritual' : path === 'body' ? '💢 Corpo' : '👁️ Alma'}\n`;
   text += `✨ Ganho de XP: +${xpGain} XP\n`;
   text += `📈 Progresso: ${bar} ${cultivation.xp}/${cultivation.xpNeeded}\n`;
-  text += `🕊️ Reino atual: ${realmName}`;
+  text += `🕊️ Reino atual: ${realmName}\n`;
+  text += `⏳ Sessões de cultivo nesta semana: ${player.weeklyCultivationCount}/${MAX_WEEKLY_SESSIONS}`;
 
   await sock.sendMessage(from, { text });
 }
 
 async function startClosedCultivation({ sock, from, player }) {
-  // Placeholder: apenas mensagem por enquanto, lógica completa será adicionada depois
-  await sock.sendMessage(from, { text: '🕯️ Cultivo recluso ainda está em preparação. Quando estiver pronto, você poderá entrar em isolamento por uma semana em troca de um grande salto no caminho.' });
+  const now = Date.now();
+
+  if (player.isInClosedCultivation && player.closedCultivationEndAt && now < new Date(player.closedCultivationEndAt).getTime()) {
+    const remaining = new Date(player.closedCultivationEndAt).getTime() - now;
+    return sock.sendMessage(from, { text: `🕯️ Você já está em cultivo recluso. Restam ${formatCooldown(remaining)} até o fim do isolamento.` });
+  }
+
+  const endAt = new Date(now + ONE_WEEK_MS);
+  player.isInClosedCultivation = true;
+  player.closedCultivationEndAt = endAt;
+  await player.save();
+
+  await sock.sendMessage(from, { text: '🕯️ Você inicia um cultivo recluso de portas fechadas por 7 dias. Durante esse período, não poderá realizar ações normais. No futuro, falta de alimento poderá causar desgaste ou morte — prepare-se bem antes de se isolar.' });
 }
