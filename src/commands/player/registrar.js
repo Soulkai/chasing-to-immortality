@@ -2,6 +2,8 @@ const { RACES, rollRace } = require('../../data/races');
 const { CLANS, rollClan } = require('../../data/clans');
 const { rollTalents } = require('../../data/talents');
 const Player = require('../../models/Player');
+const Technique = require('../../models/Technique');
+const Item = require('../../models/Item');
 const { QI_REALMS, BODY_REALMS, MIND_REALMS, getRealmName } = require('../../data/realms');
 const { formatCurrency, rarityEmoji, progressBar } = require('../../utils/format');
 
@@ -71,7 +73,6 @@ module.exports = {
       return sock.sendMessage(from, { text: '⚠️ Você já possui um personagem neste mundo. Use !perfil para vê-lo.' });
     }
 
-    // Se já está em fluxo de registro
     const pending = PENDING_REGISTRATIONS.get(phone);
     if (!args.length && pending) {
       return sock.sendMessage(from, { text: 'Você já está no processo de criação. Responda com 1, 2, 3, 4 ou 5 nas perguntas de índole.' });
@@ -92,7 +93,6 @@ module.exports = {
       return sock.sendMessage(from, { text: 'O nome do personagem deve ter entre 3 e 24 caracteres.' });
     }
 
-    // Sorteio de raça, clã e talentos
     const race = rollRace();
     const clan = rollClan();
     const talents = rollTalents();
@@ -110,11 +110,9 @@ module.exports = {
       currentQuestion: 0,
     };
 
-    // Se já gastou as 3 chances, na 4ª criação vai direto sem confirmação
     const needsConfirm = rollsLeft > 0;
 
     if (!needsConfirm) {
-      // Pula direto para perguntas de índole
       PENDING_REGISTRATIONS.set(phone, { rollsLeft: 0, draft });
       return askKarmaQuestion(sock, from, phone);
     }
@@ -139,7 +137,6 @@ module.exports = {
 
     await sock.sendMessage(from, { text });
 
-    // Escutar próxima mensagem do jogador para confirmar ou rerrolar
     const listener = async ({ messages }) => {
       for (const m of messages) {
         if (!m.message || m.key.remoteJid !== from || (m.key.participant || m.key.remoteJid) !== sender) continue;
@@ -153,7 +150,6 @@ module.exports = {
         if (!state) return;
 
         if (choice === '2') {
-          // Recusar e sortear novamente
           if (state.rollsLeft <= 0) {
             await sock.sendMessage(from, { text: 'Você já desafiou o destino muitas vezes. O próximo resultado será final.' });
           }
@@ -161,7 +157,6 @@ module.exports = {
           return module.exports.execute({ sock, msg, from, sender, args });
         }
 
-        // Aceitou — seguir para perguntas de índole
         PENDING_REGISTRATIONS.set(phone, { ...state, draft: { ...state.draft }, confirmed: true });
         return askKarmaQuestion(sock, from, phone);
       }
@@ -238,6 +233,7 @@ async function finalizeRegistration(sock, from, phone) {
     charisma: 10 + (draft.race.buffs?.charisma || 0),
     luck: 10 + (draft.race.buffs?.luck || 0),
     karma,
+    hunger: 100,
   };
 
   const hpBase = 80;
@@ -252,6 +248,14 @@ async function finalizeRegistration(sock, from, phone) {
   attributes.attack = 10 + Math.floor(attributes.strength * 1.5);
   attributes.defense = 8 + Math.floor(attributes.endurance * 1.2);
   attributes.speed = 10 + Math.floor(attributes.agility * 1.2);
+
+  // Técnica inicial por tipo de clã
+  let startingTechName = 'Respiração da Bruma Serena';
+  if (draft.clan.specialty === 'alchemy') startingTechName = 'Coração Espehado do Dao';
+  if (draft.clan.specialty === 'sword') startingTechName = 'Caminho da Lâmina Carmesim';
+  if (draft.clan.specialty === 'demonic') startingTechName = 'Canção dos Meridianos Caóticos';
+
+  const startingTech = await Technique.findOne({ name: startingTechName });
 
   const player = await Player.create({
     phone,
@@ -268,6 +272,35 @@ async function finalizeRegistration(sock, from, phone) {
     region: 'Terras do Início',
   });
 
+  // Equipamento e comida inicial
+  const tunic = await Item.findOne({ name: 'Túnica de Discípulo da Aldeia' });
+  const sword = await Item.findOne({ name: 'Espada de Ferro Simples' });
+  const bread = await Item.findOne({ name: 'Pão de Grãos Espirituais' });
+  const water = await Item.findOne({ name: 'Água de Fonte Serena' });
+
+  if (tunic) player.equipment.body = tunic._id;
+  if (sword) player.equipment.weapon = sword._id;
+
+  if (bread) {
+    player.inventory.push({ item: bread._id, quantity: 3 });
+  }
+  if (water) {
+    player.inventory.push({ item: water._id, quantity: 3 });
+  }
+
+  // Atribuir técnica inicial ao caminho apropriado
+  if (startingTech) {
+    if (startingTech.cultivationType === 'qi' || startingTech.paths?.includes('qi')) {
+      player.qiCultivation.technique = startingTech._id;
+    } else if (startingTech.cultivationType === 'body' || startingTech.paths?.includes('body')) {
+      player.bodyCultivation.technique = startingTech._id;
+    } else if (startingTech.cultivationType === 'mind' || startingTech.paths?.includes('mind')) {
+      player.mindCultivation.technique = startingTech._id;
+    }
+  }
+
+  await player.save();
+
   PENDING_REGISTRATIONS.delete(phone);
 
   const alignment = karma > 30 ? 'Caminho Ortodoxo' : karma < -30 ? 'Caminho Demoníaco' : 'Caminho Neutro';
@@ -277,7 +310,9 @@ async function finalizeRegistration(sock, from, phone) {
     `🧬 Raça: ${player.race} (${draft.race.category})\n` +
     `🏛️ Clã de Origem: ${player.clan}\n` +
     `❤️ Vidas: ${player.lives}/9\n` +
-    `⚖️ Karma inicial: ${karma} (${alignment})\n\n` +
+    `⚖️ Karma inicial: ${karma} (${alignment})\n` +
+    `📜 Técnica Inicial: ${startingTech ? startingTech.name : 'Respiração da Bruma Serena'}\n` +
+    `🎒 Itens iniciais: túnica, espada simples, pão e água.\n\n` +
     `Use !perfil para ver sua ficha completa e iniciar sua jornada.`;
 
   await sock.sendMessage(from, { text });
