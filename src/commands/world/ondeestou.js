@@ -6,19 +6,21 @@ module.exports = {
   aliases: ['local', 'posicao', 'posição'],
   async execute({ sock, from, sender }) {
     const phone = sender.split('@')[0];
+    console.log(`[ondeestou] Requisição de localização por ${phone} em ${from}`);
 
     const player = await Player.findOne({ phone }).populate('currentRegion');
     if (!player) {
+      console.log('[ondeestou] Nenhum personagem encontrado para o jogador.');
       return sock.sendMessage(from, { text: 'Você ainda não possui um personagem. Use !registrar para iniciar sua jornada.' });
     }
 
-    // Tenta encontrar a região atual pelo nome se o campo populado não existir
     let region = player.currentRegion;
     if (!region && player.location) {
       region = await Region.findOne({ name: player.location });
     }
 
     if (!region) {
+      console.warn(`[ondeestou] Região não encontrada para jogador ${phone} na location: ${player.location}`);
       return sock.sendMessage(from, { text: 'Seu corpo está no mundo, mas o Dao não reconhece sua localização. Avise um ancião (dev) para ajustar suas Terras.' });
     }
 
@@ -41,6 +43,7 @@ module.exports = {
     text += `⚠️ Periculosidade: ${danger}/10 (${dangerText})\n`;
     text += `🌀 ${qiRange}`;
 
+    console.log(`[ondeestou] Enviando informações da região '${region.name}' com perigo ${danger} para ${phone}.`);
     await sock.sendMessage(from, { text });
   },
 };

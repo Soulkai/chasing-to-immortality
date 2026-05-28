@@ -6,13 +6,17 @@ module.exports = {
   aliases: ['besta', 'bestas', 'pets'],
   async execute({ sock, from, sender }) {
     const phone = sender.split('@')[0];
+    console.log(`[companheiros] Jogador ${phone} solicitou lista de companheiros.`);
+
     const player = await Player.findOne({ phone }).populate('companions.beast');
 
     if (!player) {
+      console.log('[companheiros] Jogador sem personagem.');
       return sock.sendMessage(from, { text: 'Você ainda não possui um personagem. Use !registrar para iniciar sua jornada.' });
     }
 
     if (!player.companions || player.companions.length === 0) {
+      console.log('[companheiros] Nenhum companheiro encontrado para jogador.');
       return sock.sendMessage(from, { text: 'Nenhuma besta ou companheiro segue seus passos ainda. Domine criaturas em suas explorações para formar laços.' });
     }
 
@@ -28,6 +32,7 @@ module.exports = {
 
     text += '\nUse !ativarbesta NomeDaBesta para escolher quem estará ao seu lado em combate.';
 
+    console.log(`[companheiros] Lista enviada para ${player.name}.`);
     await sock.sendMessage(from, { text });
   },
 };
