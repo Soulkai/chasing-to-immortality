@@ -1,262 +1,180 @@
-# Ascensão Imortal — Bot Wuxia/Xianxia para WhatsApp
+# Ascensão Imortal — Bot Game Wuxia/Xianxia para WhatsApp
 
-Base inicial de um chatbot game global de Wuxia/Xianxia usando:
+Bot RPG persistente para WhatsApp usando **Baileys**, **Node.js/TypeScript**, **Prisma** e **PostgreSQL**. O jogo foi desenhado como uma simulação de cultivo Wuxia/Xianxia com registro narrativo, talento, destino, karma, sorte, 9 vidas, exploração, NPCs, missões, regiões, combate PvE, inventário, loja, profissões, seitas, rankings e legado pelo Samsara.
 
-- **Node.js + TypeScript**
-- **Baileys** para conexão com WhatsApp Web
-- **PostgreSQL** como banco local gratuito
-- **Prisma ORM** para migrations e acesso ao banco
+> Use apenas números próprios e respeite os termos do WhatsApp. O Baileys se conecta ao protocolo do WhatsApp Web e pode mudar conforme o WhatsApp muda.
 
-O mundo do jogo é global: o personagem é vinculado ao número do WhatsApp, então funciona igual no privado e em qualquer grupo ativado.
+## Principais sistemas já implementados
 
----
+- Login por QR Code ou código de pareamento via número.
+- Admin global por número.
+- `!ativarbot` obrigatório em grupos, somente admin.
+- Identidade global por número do WhatsApp, funcionando no privado e em grupos.
+- Registro com 3 rerolls e quarta rolagem obrigatória.
+- Sorteio inicial de raça, clã, talento, destino, sorte, raiz espiritual, corpo divino e região.
+- Narrativa de nascimento baseada no sorteio.
+- Questionário de índole com respostas por número ou reação `1️⃣` a `5️⃣` na mensagem do bot.
+- Perfil com aparência por link de imagem.
+- HP, Qi e Alma calculados por atributos.
+- Sistema de 9 vidas e geração de Pontos de Destino na morte final.
+- Cultivo espiritual/físico/alma/todos.
+- Rompimento de estágio/reino com chance de sucesso/falha.
+- Epifanias aleatórias durante cultivo.
+- Mundo aberto com regiões, rotas, perigo, densidade de Qi, recursos, bestas e NPCs.
+- NPCs que oferecem missões conforme reputação/karma.
+- Missões com recompensa de pedras espirituais, karma, reputação e cultivo.
+- Combate PvE em turnos: `!atacar`, `!usar_tecnica`, `!fugir`.
+- Técnicas aprendíveis.
+- Inventário em JSON.
+- Loja do bot e uso de itens.
+- Profissões iniciais e crafting simples.
+- Criação básica de seita.
+- Rankings.
 
-## Recursos já implementados nesta base
-
-### Sistema do bot
-
-- Conexão via QR Code.
-- Conexão via número/código de pareamento.
-- Identificação global do jogador por número do WhatsApp.
-- Normalização de JID de grupo, privado e device JID.
-- `!ativarbot` para liberar o bot apenas em grupos autorizados.
-- Apenas os admins configurados podem usar `!ativarbot`.
-- Logs de comandos no banco.
-- Comando `!menu` com categorias bonitas.
-- Botões básicos com fallback textual.
-
-### Registro do personagem
-
-- `!registrar Nome / Sexo`
-- Sorteio inicial de:
-  - Raça
-  - Clã de origem
-  - Talento
-  - Destino
-  - Sorte
-  - Raiz espiritual
-  - Corpo divino
-  - Região inicial
-  - Atributos
-- Sistema de 3 rerolls.
-- Na quarta rolagem, o destino é aceito automaticamente.
-- Resposta narrativa baseada em raça, clã, região e destino.
-- Questionário de índole com 5 perguntas.
-- Resposta por número digitado ou reação na mensagem/imagem do bot.
-- Cálculo de karma inicial.
-
-### Perfil
-
-- `!perfil`
-- Exibe:
-  - Raça
-  - Clã
-  - Talento
-  - Destino
-  - Sorte
-  - Karma
-  - Raiz espiritual
-  - Corpo divino
-  - Região
-  - Seita
-  - Reinos de corpo, espírito e alma
-  - HP com barra
-  - Qi com barra
-  - Alma com barra
-  - Vidas
-  - Atributos
-- `!setaparencia <link>` salva aparência do personagem.
-- Se existir aparência, `!perfil` tenta enviar a imagem com o perfil na legenda.
-
-### Sistema de vidas e legado
-
-- Todo personagem possui 9 vidas.
-- Estrutura para morte final e geração de Pontos de Destino.
-- `!vidas`
-- `!reencarnar` mostra a loja inicial do Samsara.
-- `!testemorte` existe apenas para admin testar o sistema de vidas.
-
----
-
-## Como rodar
-
-### 1. Instale dependências
-
-```bash
-npm install
-```
-
-### 2. Configure o `.env`
-
-Copie:
+## Instalação
 
 ```bash
 cp .env.example .env
-```
-
-Edite o `.env`:
-
-```env
-DATABASE_URL="postgresql://wuxia:wuxia@localhost:5432/wuxia_game?schema=public"
-LOGIN_PHONE_NUMBER=""
-ADMIN_NUMBERS="5567981445060,5567814459060"
-BOT_PREFIX="!"
-REQUIRE_GROUP_ACTIVATION="true"
-AUTH_DIR="auth"
-LOG_LEVEL="info"
-```
-
-### 3. Suba o PostgreSQL local
-
-```bash
 docker compose up -d
-```
-
-### 4. Rode as migrations
-
-```bash
+npm install
 npm run prisma:generate
 npm run prisma:migrate
-```
-
-### 5. Inicie o bot
-
-```bash
 npm run dev
 ```
 
----
-
-## Login por QR Code
-
-Deixe `LOGIN_PHONE_NUMBER` vazio:
+## Configuração `.env`
 
 ```env
+DATABASE_URL="postgresql://wuxia:wuxia@localhost:5432/wuxia_bot?schema=public"
+ADMIN_NUMBERS="5567981445060,5567814459060"
+BOT_PREFIX="!"
+REQUIRE_GROUP_ACTIVATION=true
+AUTH_DIR="auth"
+LOG_LEVEL="info"
+
+# Opcional: login por número em vez de QR. Use só números, sem + ou espaços.
 LOGIN_PHONE_NUMBER=""
 ```
 
-Ao iniciar, o terminal exibirá o QR Code.
-
----
-
-## Login por número/código de pareamento
-
-Coloque o número no `.env` sem `+`, espaço, traço ou parênteses:
-
-```env
-LOGIN_PHONE_NUMBER="5567999999999"
-```
-
-Ao iniciar, o terminal mostrará um código de pareamento.
-
-No celular:
-
-```txt
-WhatsApp > Aparelhos conectados > Conectar com número de telefone
-```
-
-Digite o código mostrado no terminal.
-
----
-
-## Ativar bot em grupo
-
-Entre no grupo desejado e envie:
-
-```txt
-!ativarbot
-```
-
-Somente os números configurados em `ADMIN_NUMBERS` podem ativar.
-
-Enquanto o grupo não estiver ativado, o bot ignora os comandos desse grupo.
-
-No privado, o bot continua respondendo normalmente.
-
----
+Se `LOGIN_PHONE_NUMBER` ficar vazio, o bot mostra QR Code no terminal. Se preencher, o bot gera um código de pareamento para usar em **Aparelhos conectados > Conectar com número de telefone**.
 
 ## Comandos principais
 
+### Admin
+
 ```txt
-!menu
 !ativarbot
-!registrar Nome / Sexo
-!perfil
-!setaparencia <link>
-!vidas
-!reencarnar
-```
-
-Comando de teste admin:
-
-```txt
 !testemorte
 ```
 
----
-
-## Respostas por reação
-
-Sempre que o bot mandar uma pergunta numerada, ele salva o ID da mensagem no banco.
-
-O jogador pode responder:
+### Personagem
 
 ```txt
-1
-2
-3
-4
-5
+!registrar Nome / Sexo
+!perfil
+!setaparencia <link>
+!inventario
+!carteira
+!vidas
 ```
 
-Ou reagir à imagem/mensagem do bot com:
+### Cultivo
 
 ```txt
-1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣
+!cultivar
+!cultivar espiritual
+!cultivar fisico
+!cultivar alma
+!cultivar todos
+!romper
+!tecnicas
+!aprender Nome da Técnica
 ```
 
-O bot só aceita a reação do dono daquele fluxo. Se outro jogador reagir, a resposta é ignorada.
-
----
-
-## Identidade global do jogador
-
-O WhatsApp usa formatos diferentes em grupo e privado:
-
-- Privado: `5567...@s.whatsapp.net`
-- Grupo: mensagem vem do grupo, mas o jogador aparece em `participant`
-- Alguns casos incluem device JID com `:`
-
-A função `normalizeWhatsAppId` limpa tudo e salva apenas o número:
+### Mundo
 
 ```txt
-5567981445060
+!mapa
+!local
+!viajar Nome da Região
+!explorar
+!andar
+!cacar
+!npc
+!missao
+!concluir_missao
 ```
 
-Esse número vira a identidade global do jogador no banco.
+### Combate
 
----
+```txt
+!atacar
+!usar_tecnica Nome da Técnica
+!fugir
+```
 
-## Próximas fases sugeridas
+### Economia
 
-1. Inventário e itens.
-2. Economia com pedras espirituais.
-3. Loja do bot.
-4. Mercado global.
-5. Leilão.
-6. Cultivo real com cooldown e rompimento.
-7. Exploração global.
-8. Encontro entre jogadores de grupos diferentes.
-9. Trocas transacionais.
-10. Seitas criadas por jogadores.
-11. Técnicas da seita.
-12. Profissões: alquimia, forja, formações e talismãs.
-13. Combate PvE/PvP.
-14. Boss global e eventos.
-15. Sistema completo de reencarnação e compra de legados.
+```txt
+!loja
+!comprar Nome do Item
+!usar Nome do Item
+!saldo
+```
 
----
+### Profissões
 
-## Observações importantes
+```txt
+!profissao
+!aprender_profissao Alquimista
+!alquimia
+!forja
+!formacao
+!talismas
+!receitas
+```
 
-Baileys não é a API oficial do WhatsApp Business. Ele interage com o WhatsApp Web. Por isso, botões, listas e mensagens interativas podem variar com mudanças do WhatsApp. Esta base sempre mantém fallback por texto e número para não quebrar o jogo.
+### Seitas e destino
+
+```txt
+!criarseita Nome
+!seita
+!destino
+!karma
+!sorte
+!samsara
+!reencarnar
+```
+
+### Rankings
+
+```txt
+!rank cultivo
+!rank riqueza
+!rank karma
+!rank pvp
+```
+
+## Fluxo recomendado de teste
+
+1. No grupo, o admin usa `!ativarbot`.
+2. O player usa `!registrar Long Wei / Masculino`.
+3. Reage com `1️⃣` para aceitar ou `2️⃣` para reroll.
+4. Responde as perguntas de índole com reações ou números.
+5. Usa `!perfil`.
+6. Usa `!setaparencia https://.../imagem.png`.
+7. Usa `!cultivar`, `!romper`, `!mapa`, `!explorar` e `!atacar`.
+
+## Observações de arquitetura
+
+O projeto usa campos JSON em `Character` para inventário, técnicas, missão ativa e combate ativo. Isso acelera o desenvolvimento da simulação, mas os módulos de mercado/leilão/troca entre players devem virar tabelas transacionais próprias antes de produção, para evitar duplicação de itens e corrida de dados.
+
+Próximas expansões recomendadas:
+
+- Mercado global com tabelas `MarketListing` e transações Prisma.
+- Troca player-player com sessão confirmada por ambos.
+- PvP real e arena ranqueada.
+- Seitas com tabela própria de membros, técnicas e tesouro.
+- NPCs persistentes por região.
+- Eventos globais agendados.
+- Loja do Samsara com compras reais de legado.

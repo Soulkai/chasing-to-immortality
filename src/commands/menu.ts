@@ -32,7 +32,9 @@ export const menuText = `╔═════════════════�
 !viajar
 !local
 !mapa
-!coletar
+!npc
+!missao
+!concluir_missao
 !cacar
 !dungeon
 !ruina
@@ -70,7 +72,8 @@ export const menuText = `╔═════════════════�
 !carteira
 !loja
 !loja diaria
-!comprar
+!comprar Nome
+!usar Nome
 !vender
 !mercado
 !leilao
@@ -78,7 +81,7 @@ export const menuText = `╔═════════════════�
 
 🛠️ *PROFISSÕES*
 !profissao
-!aprender_profissao
+!aprender_profissao Nome
 !alquimia
 !forja
 !formacao

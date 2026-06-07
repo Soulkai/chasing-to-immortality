@@ -20,11 +20,12 @@ export function isGroupJid(jid: string | undefined | null): boolean {
 }
 
 export function getSenderIdentity(message: proto.IWebMessageInfo): SenderIdentity | null {
-  const chatJid = message.key.remoteJid
+  const key = message.key
+  const chatJid = key?.remoteJid
   if (!chatJid) return null
 
   const group = isGroupJid(chatJid)
-  const senderJid = group ? message.key.participant ?? '' : message.key.remoteJid ?? ''
+  const senderJid = group ? key?.participant ?? '' : key?.remoteJid ?? ''
   const senderPhone = normalizeWhatsAppId(senderJid)
 
   if (!senderPhone || !senderJid) return null
@@ -39,9 +40,9 @@ export function getSenderIdentity(message: proto.IWebMessageInfo): SenderIdentit
 }
 
 export function isFromMe(message: proto.IWebMessageInfo): boolean {
-  return Boolean(message.key.fromMe)
+  return Boolean(message.key?.fromMe)
 }
 
 export async function safeSendText(sock: WASocket, jid: string, text: string, quoted?: proto.IWebMessageInfo) {
-  return sock.sendMessage(jid, { text }, quoted ? { quoted } : undefined)
+  return sock.sendMessage(jid, { text }, quoted ? ({ quoted } as any) : undefined)
 }

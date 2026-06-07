@@ -125,6 +125,19 @@ model Character {
   foundedSect        Boolean  @default(false)
   wealthEarned       Int      @default(0)
 
+  spiritStones       Int      @default(300)
+  reputation         Int      @default(0)
+  inventory          Json     @default("{}")
+  knownTechniques    Json     @default("[]")
+  equippedTechnique  String?  @default("Punho Mortal")
+  activeMission      Json?
+  activeCombat       Json?
+  professionName     String?
+  professionLevel    Int      @default(0)
+  professionExp      Int      @default(0)
+  sectRole           String?
+  currentActivity    String?
+
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

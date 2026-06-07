@@ -12,17 +12,17 @@ export async function getActiveCharacter(userId: string) {
 export async function setAppearance(sock: WASocket, chatJid: string, userId: string, url: string, quoted?: proto.IWebMessageInfo) {
   const character = await getActiveCharacter(userId)
   if (!character) {
-    await sock.sendMessage(chatJid, { text: '❌ Você precisa criar um personagem primeiro. Use !registrar Nome / Sexo.' }, quoted ? { quoted } : undefined)
+    await sock.sendMessage(chatJid, { text: '❌ Você precisa criar um personagem primeiro. Use !registrar Nome / Sexo.' }, quoted ? ({ quoted } as any) : undefined)
     return
   }
 
   if (!/^https?:\/\//i.test(url)) {
-    await sock.sendMessage(chatJid, { text: '❌ Link inválido. Use um link começando com http:// ou https://.' }, quoted ? { quoted } : undefined)
+    await sock.sendMessage(chatJid, { text: '❌ Link inválido. Use um link começando com http:// ou https://.' }, quoted ? ({ quoted } as any) : undefined)
     return
   }
 
   await prisma.character.update({ where: { id: character.id }, data: { appearanceUrl: url } })
-  await sock.sendMessage(chatJid, { text: '✅ Aparência definida com sucesso!\nEla será exibida sempre que você usar !perfil.' }, quoted ? { quoted } : undefined)
+  await sock.sendMessage(chatJid, { text: '✅ Aparência definida com sucesso!\nEla será exibida sempre que você usar !perfil.' }, quoted ? ({ quoted } as any) : undefined)
 }
 
 export function formatProfile(character: Awaited<ReturnType<typeof getActiveCharacter>>): string {
@@ -62,7 +62,7 @@ export function formatProfile(character: Awaited<ReturnType<typeof getActiveChar
 export async function sendProfile(sock: WASocket, chatJid: string, userId: string, quoted?: proto.IWebMessageInfo) {
   const character = await getActiveCharacter(userId)
   if (!character) {
-    await sock.sendMessage(chatJid, { text: '❌ Você ainda não tem personagem.\nUse: !registrar Nome / Sexo' }, quoted ? { quoted } : undefined)
+    await sock.sendMessage(chatJid, { text: '❌ Você ainda não tem personagem.\nUse: !registrar Nome / Sexo' }, quoted ? ({ quoted } as any) : undefined)
     return
   }
 
@@ -81,10 +81,10 @@ export async function sendProfile(sock: WASocket, chatJid: string, userId: strin
         footer: 'Caminho do Dao',
         buttons,
         headerType: 4
-      } as any, quoted ? { quoted } : undefined)
+      } as any, quoted ? ({ quoted } as any) : undefined)
       return
     } catch {
-      await sock.sendMessage(chatJid, { text: `${text}\n\n⚠️ Não consegui carregar a aparência salva. Use !setaparencia <link> para trocar.` }, quoted ? { quoted } : undefined)
+      await sock.sendMessage(chatJid, { text: `${text}\n\n⚠️ Não consegui carregar a aparência salva. Use !setaparencia <link> para trocar.` }, quoted ? ({ quoted } as any) : undefined)
       return
     }
   }
@@ -94,7 +94,7 @@ export async function sendProfile(sock: WASocket, chatJid: string, userId: strin
     footer: 'Caminho do Dao',
     buttons,
     headerType: 1
-  } as any, quoted ? { quoted } : undefined)
+  } as any, quoted ? ({ quoted } as any) : undefined)
 }
 
 export async function damageLifeAndMaybeCreateLegacy(sock: WASocket, chatJid: string, userId: string) {

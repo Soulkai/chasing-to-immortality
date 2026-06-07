@@ -46,9 +46,10 @@ export async function sendReactionPrompt(
 ) {
   const image = fs.existsSync(questionCardPath) ? fs.readFileSync(questionCardPath) : undefined
   const sent = image
-    ? await sock.sendMessage(chatJid, { image, caption }, quoted ? { quoted } : undefined)
-    : await sock.sendMessage(chatJid, { text: caption }, quoted ? { quoted } : undefined)
+    ? await sock.sendMessage(chatJid, { image, caption }, quoted ? ({ quoted } as any) : undefined)
+    : await sock.sendMessage(chatJid, { text: caption }, quoted ? ({ quoted } as any) : undefined)
 
+  if (!sent) return sent
   const messageId = sent.key.id
   if (!messageId) return sent
 

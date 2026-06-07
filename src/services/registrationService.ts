@@ -64,7 +64,7 @@ export async function startRegistration(
 ) {
   const active = await prisma.character.findFirst({ where: { userId, active: true, isFinalDead: false } })
   if (active) {
-    await sock.sendMessage(chatJid, { text: `❌ Você já possui um personagem ativo: *${active.name}*.\nUse !perfil para ver seus dados.` }, quoted ? { quoted } : undefined)
+    await sock.sendMessage(chatJid, { text: `❌ Você já possui um personagem ativo: *${active.name}*.\nUse !perfil para ver seus dados.` }, quoted ? ({ quoted } as any) : undefined)
     return
   }
 
